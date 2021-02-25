@@ -1,14 +1,19 @@
 import numpy as np
 import cv2
-import pigpio
+
+pi = None
+try:
+    import pigpio
+    print("Don't forget to start with sudo pigpiod")
+
+    pi = pigpio.pi()
+except:
+    print('Sorry, no raspberries here')
 
 
 #GPIO pin 12 = BCM pin 18 = wiringpi pin 1 
 led_pin = 18
 
-print("Don't forget to start with sudo pigpiod")
-
-pi = pigpio.pi()
 
 faceCascade = cv2.CascadeClassifier('haar.xml')
 
@@ -22,9 +27,11 @@ while True:
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     faces = faceCascade.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=5, minSize=(20, 20))
 
-    pi.set_PWM_dutycycle(led_pin, len(faces) * 16)
-    pi.set_PWM_frequency(4,600)
-    pi.set_PWM_dutycycle(4, 128 if len(faces) > 0 else 0)
+    if pi:
+        pi.set_PWM_dutycycle(led_pin, len(faces) * 16)
+        pi.set_PWM_frequency(4,600)
+        pi.set_PWM_dutycycle(4, 128 if len(faces) > 0 else 0)
+    
     for (x,y,w,h) in faces:
         cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
         roi_gray = gray[y:y+h, x:x+w]
@@ -36,7 +43,8 @@ while True:
     if k == 27: # press 'ESC' to quit
         break
 
-pi.set_PWM_dutycycle(led_pin, 0)
-pi.set_PWM_dutycycle(4, 0)
+if pi:
+    pi.set_PWM_dutycycle(led_pin, 0)
+    pi.set_PWM_dutycycle(4, 0)
 cap.release()
 cv2.destroyAllWindows()
